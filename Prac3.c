@@ -1,109 +1,76 @@
-parent.c
+File 1: parent.c
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/wait.h>
 
-void bubbleSort(int arr[], int n) {
-    int i, j, temp;
-    for (i = 0; i < n - 1; i++) {
-        for (j = 0; j < n - i - 1; j++) {
+void sort(int arr[], int n) {
+    for (int i = 0; i < n - 1; i++)
+        for (int j = 0; j < n - i - 1; j++)
             if (arr[j] > arr[j + 1]) {
-                temp = arr[j];
+                int t = arr[j];
                 arr[j] = arr[j + 1];
-                arr[j + 1] = temp;
+                arr[j + 1] = t;
             }
-        }
-    }
 }
 
 int main() {
     int n, i;
-
-    printf("Enter the number of integers to be sorted: ");
+    printf("Enter number of elements: ");
     scanf("%d", &n);
 
     int arr[n];
-    printf("Enter the integers to be sorted: ");
-    for (i = 0; i < n; i++) {
+    printf("Enter %d integers:\n", n);
+    for (i = 0; i < n; i++)
         scanf("%d", &arr[i]);
-    }
+
+    // Sort array in parent
+    sort(arr, n);
 
     pid_t pid = fork();
 
-    if (pid < 0) {
-        printf("Fork failed!\n");
-        return 1;
-    } 
-    else if (pid == 0) {
-        // Child process - execute child program with the array as arguments
+    if (pid == 0) {
+        // Child process
         char *args[n + 2];
         args[0] = "./child";
 
         for (i = 0; i < n; i++) {
-            char *arg = (char *)malloc(20);
-            sprintf(arg, "%d", arr[i]);
-            args[i + 1] = arg;
+            char *num = malloc(10);
+            sprintf(num, "%d", arr[i]);
+            args[i + 1] = num;
         }
-
         args[n + 1] = NULL;
 
         execve(args[0], args, NULL);
         perror("execve failed");
-        return 1;
+        exit(1);
+    } 
+    else if (pid > 0) {
+        wait(NULL);
+        printf("Parent process finished.\n");
     } 
     else {
-        // Parent process - sort the array
-        printf("Parent process (PID: %d) sorting the integers...\n", getpid());
-        bubbleSort(arr, n);
-
-        printf("Parent process (PID: %d) sorted integers: ", getpid());
-        for (i = 0; i < n; i++) {
-            printf("%d ", arr[i]);
-        }
-        printf("\n");
-
-        wait(NULL); // Wait for child to finish
+        perror("fork failed");
+        exit(1);
     }
 
     return 0;
 }
 
-child.c
 
+File 2: child.c
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 
-void bubbleSort(int arr[], int n) {
-    int i, j, temp;
-    for (i = 0; i < n - 1; i++) {
-        for (j = 0; j < n - i - 1; j++) {
-            if (arr[j] > arr[j + 1]) {
-                temp = arr[j];
-                arr[j] = arr[j + 1];
-                arr[j + 1] = temp;
-            }
-        }
-    }
-}
-
 int main(int argc, char *argv[]) {
-    int n = argc - 1;
-    int arr[n];
-
-    for (int i = 0; i < n; i++) {
-        arr[i] = atoi(argv[i + 1]);
-    }
-
-    printf("Child process (PID: %d) sorting the integers...\n", getpid());
-    bubbleSort(arr, n);
-
-    printf("Child process (PID: %d) sorted integers: ", getpid());
-    for (int i = 0; i < n; i++) {
-        printf("%d ", arr[i]);
+    printf("\nChild process (PID: %d)\n", getpid());
+    printf("Array in reverse order:\n");
+    
+    for (int i = argc - 1; i > 0; i--) {
+        printf("%s ", argv[i]);
     }
     printf("\n");
-
     return 0;
 }
+
